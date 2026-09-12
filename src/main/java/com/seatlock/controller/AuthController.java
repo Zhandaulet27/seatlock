@@ -7,6 +7,8 @@ import com.seatlock.dto.UserResponse;
 import com.seatlock.security.AppUserPrincipal;
 import com.seatlock.security.JwtService;
 import com.seatlock.service.UserService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -23,6 +25,7 @@ import org.springframework.web.server.ResponseStatusException;
 @RestController
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
+@Tag(name = "Auth", description = "Registration and login - no token required")
 public class AuthController {
 
     private final UserService userService;
@@ -30,12 +33,14 @@ public class AuthController {
     private final JwtService jwtService;
 
     @PostMapping("/register")
+    @Operation(summary = "Register a new user", description = "Password is BCrypt-hashed before storage.")
     public ResponseEntity<UserResponse> register(@Valid @RequestBody RegisterRequest request) {
         var user = userService.create(request.email(), request.password());
         return ResponseEntity.status(HttpStatus.CREATED).body(UserResponse.from(user));
     }
 
     @PostMapping("/login")
+    @Operation(summary = "Log in", description = "Returns a JWT - paste it into the Authorize button above to call the secured endpoints.")
     public AuthResponse login(@Valid @RequestBody LoginRequest request) {
         var authentication = authenticate(request);
         var principal = (AppUserPrincipal) authentication.getPrincipal();

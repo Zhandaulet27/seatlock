@@ -18,6 +18,14 @@ spring:
       hibernate:
         format_sql: true
 
+  mvc:
+    problemdetails:
+      # Makes Spring's own built-in exception handling (e.g. @Valid failures)
+      # return the same RFC 7807 ProblemDetail JSON shape as
+      # GlobalExceptionHandler already uses for our own thrown exceptions -
+      # one consistent error format across the whole API.
+      enabled: true
+
 server:
   port: 8080
 

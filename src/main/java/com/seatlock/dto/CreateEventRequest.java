@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 
 public record CreateEventRequest(
         @NotBlank String name,
-        String venue,
+        @NotBlank String venue,
         @NotNull LocalDateTime eventTime
 ) {
 }

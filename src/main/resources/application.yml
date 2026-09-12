@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: seatlock
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/seatlock
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:zhan_1605}
+
+  jpa:
+    hibernate:
+      # 'update' auto-adjusts tables to match your entities - convenient while learning,
+      # but not something you'd trust in a real production app (that's what Phase-later
+      # tools like Flyway/Liquibase are for). Fine for now.
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+server:
+  port: 8080

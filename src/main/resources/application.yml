@@ -20,3 +20,10 @@ spring:
 
 server:
   port: 8080
+
+jwt:
+  # A real deployment would set JWT_SECRET as an actual environment variable
+  # (never commit a real production secret to git) - this default is a
+  # randomly generated 256-bit key that's fine for local development.
+  secret: ${JWT_SECRET:rbIJlJntauPgwzJvZAYVHOO9/8QkGzPqI6Q5Q0fXsrQ=}
+  expiration-ms: 86400000 # 24 hours

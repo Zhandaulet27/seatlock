@@ -122,9 +122,13 @@ public class BookingService {
         return bookingRepository.findByUserId(userId);
     }
 
-    public void cancel(Long bookingId) {
+    public void cancel(Long bookingId, Long requestingUserId) {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Booking not found: " + bookingId));
+
+        if (!booking.getUser().getId().equals(requestingUserId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only cancel your own bookings");
+        }
 
         booking.setStatus(BookingStatus.CANCELLED);
         Seat seat = booking.getSeat();

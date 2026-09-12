@@ -2,11 +2,10 @@ package com.seatlock.dto;
 
 import jakarta.validation.constraints.NotNull;
 
-// userId is passed explicitly for now because there's no authentication yet
-// (Phase 1). Phase 3 replaces this with the logged-in user taken from the JWT,
-// and this field goes away.
+// userId used to be passed explicitly here (Phase 1/2). Now that Phase 3 adds
+// auth, the caller's identity comes from their JWT instead - see
+// BookingController.currentUserId(Authentication).
 public record CreateBookingRequest(
-        @NotNull Long seatId,
-        @NotNull Long userId
+        @NotNull Long seatId
 ) {
 }

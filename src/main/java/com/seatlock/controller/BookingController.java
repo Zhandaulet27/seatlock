@@ -18,9 +18,24 @@ public class BookingController {
 
     private final BookingService bookingService;
 
+    // Naive Phase 1 version - kept around specifically so it can be load
+    // tested side by side with the two strategies below and show the
+    // difference concurrency control actually makes.
     @PostMapping
     public ResponseEntity<BookingResponse> book(@Valid @RequestBody CreateBookingRequest request) {
         var booking = bookingService.book(request.seatId(), request.userId());
+        return ResponseEntity.status(HttpStatus.CREATED).body(BookingResponse.from(booking));
+    }
+
+    @PostMapping("/pessimistic")
+    public ResponseEntity<BookingResponse> bookPessimistic(@Valid @RequestBody CreateBookingRequest request) {
+        var booking = bookingService.bookPessimistic(request.seatId(), request.userId());
+        return ResponseEntity.status(HttpStatus.CREATED).body(BookingResponse.from(booking));
+    }
+
+    @PostMapping("/optimistic")
+    public ResponseEntity<BookingResponse> bookOptimistic(@Valid @RequestBody CreateBookingRequest request) {
+        var booking = bookingService.bookOptimistic(request.seatId(), request.userId());
         return ResponseEntity.status(HttpStatus.CREATED).body(BookingResponse.from(booking));
     }
 

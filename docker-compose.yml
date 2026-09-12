@@ -1,0 +1,40 @@
+name: seatlock
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: seatlock
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - seatlock-db-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d seatlock"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build:
+      context: .
+    ports:
+      - "8080:8080"
+    environment:
+      # Overrides application.yml's localhost default so the app reaches
+      # Postgres by its Compose service name ("db") instead.
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/seatlock
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      # Falls back to the same dev-only secret already baked into
+      # application.yml if you don't set JWT_SECRET yourself (e.g. in a
+      # .env file next to this compose file, or your shell environment).
+      JWT_SECRET: ${JWT_SECRET:-rbIJlJntauPgwzJvZAYVHOO9/8QkGzPqI6Q5Q0fXsrQ=}
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  seatlock-db-data:

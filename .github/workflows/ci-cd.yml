@@ -1,0 +1,67 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    # BookingConcurrencyTest is a real integration test - it hits actual
+    # Postgres row locks and version-column checks, so it needs a real
+    # database, not an in-memory stand-in. This spins one up as a sidecar
+    # for the whole job, matching the DB name/credentials application.yml
+    # already defaults to.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: seatlock
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d seatlock"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Run tests
+        run: mvn -B clean test
+
+  deploy:
+    needs: build-and-test
+    # Only deploy on an actual push to main (not on pull_request builds,
+    # and not if the tests above failed).
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd ~/seatlock
+            git pull
+            docker compose up --build -d
+            # Old image layers pile up on the instance's small disk after
+            # repeated redeploys - clear dangling ones each time.
+            docker image prune -f

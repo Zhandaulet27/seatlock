@@ -44,13 +44,19 @@ services:
         condition: service_healthy
 
   nginx:
-    image: nginx:1.27-alpine
+    # Multi-stage build (see nginx/Dockerfile): compiles the React app in a
+    # throwaway Node stage, then bakes the static output + nginx.conf into a
+    # plain nginx:1.27-alpine image. No volume mount needed anymore - the
+    # image is self-contained and rebuilds like the app's own Dockerfile
+    # does, so "docker compose up --build" always serves whatever's
+    # currently in frontend/.
+    build:
+      context: .
+      dockerfile: nginx/Dockerfile
     ports:
       # The only publicly-reachable port. On EC2, only 22 and 80 should be
       # open in the instance's security group.
       - "80:80"
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
       - app
 

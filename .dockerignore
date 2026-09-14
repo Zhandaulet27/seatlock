@@ -6,3 +6,5 @@ target/
 .mvn/
 *.log
 loadtest/
+frontend/node_modules/
+frontend/dist/

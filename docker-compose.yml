@@ -10,7 +10,10 @@ services:
     volumes:
       - seatlock-db-data:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      # Bound to loopback only - reachable from the host itself (e.g. for
+      # psql while debugging) but never exposed on the machine's public
+      # network interface, regardless of firewall/security-group rules.
+      - "127.0.0.1:5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d seatlock"]
       interval: 5s
@@ -21,7 +24,10 @@ services:
     build:
       context: .
     ports:
-      - "8080:8080"
+      # Loopback-only, same reasoning as db above - the public entry point
+      # is Nginx on :80, not the app directly. You can still
+      # "curl 127.0.0.1:8080/..." from inside the EC2 instance to debug.
+      - "127.0.0.1:8080:8080"
     environment:
       # Overrides application.yml's localhost default so the app reaches
       # Postgres by its Compose service name ("db") instead.
@@ -29,12 +35,24 @@ services:
       DB_USERNAME: postgres
       DB_PASSWORD: postgres
       # Falls back to the same dev-only secret already baked into
-      # application.yml if you don't set JWT_SECRET yourself (e.g. in a
-      # .env file next to this compose file, or your shell environment).
+      # application.yml if you don't set JWT_SECRET yourself. On the EC2
+      # deployment, set a real secret via a .env file next to this compose
+      # file instead of relying on this fallback (see deploy notes).
       JWT_SECRET: ${JWT_SECRET:-rbIJlJntauPgwzJvZAYVHOO9/8QkGzPqI6Q5Q0fXsrQ=}
     depends_on:
       db:
         condition: service_healthy
+
+  nginx:
+    image: nginx:1.27-alpine
+    ports:
+      # The only publicly-reachable port. On EC2, only 22 and 80 should be
+      # open in the instance's security group.
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - app
 
 volumes:
   seatlock-db-data:

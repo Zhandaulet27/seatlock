@@ -3,6 +3,11 @@ name: seatlock
 services:
   db:
     image: postgres:16-alpine
+    # Bring this back up on its own after a crash or an instance reboot -
+    # without this, "docker compose ps" coming back empty (like it did
+    # today) means someone has to notice and SSH in to fix it manually.
+    # "unless-stopped" still respects an explicit "docker compose stop".
+    restart: unless-stopped
     environment:
       POSTGRES_DB: seatlock
       POSTGRES_USER: postgres
@@ -23,6 +28,7 @@ services:
   app:
     build:
       context: .
+    restart: unless-stopped
     ports:
       # Loopback-only, same reasoning as db above - the public entry point
       # is Nginx on :80, not the app directly. You can still
@@ -53,6 +59,7 @@ services:
     build:
       context: .
       dockerfile: nginx/Dockerfile
+    restart: unless-stopped
     ports:
       # The only publicly-reachable port. On EC2, only 22 and 80 should be
       # open in the instance's security group.

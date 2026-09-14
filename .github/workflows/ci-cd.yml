@@ -25,7 +25,7 @@ jobs:
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U postgres -d seatlock"
+          --health-cmd "pg_isready -h 127.0.0.1 -U postgres -d seatlock"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
@@ -41,7 +41,24 @@ jobs:
           java-version: "21"
           cache: maven
 
+      # Independently proves TCP + password auth works BEFORE Maven runs, so
+      # a credentials problem shows up as one clear line here instead of
+      # being buried at the bottom of a 10-minute Maven log. The service's
+      # own health check (above) only proves the Postgres process is up, not
+      # that these exact credentials work over TCP - pg_isready over the
+      # local socket uses "trust" auth and never checks the password, so a
+      # real auth mismatch can otherwise slip past a "healthy" service.
+      - name: Verify Postgres connectivity
+        env:
+          PGPASSWORD: postgres
+        run: |
+          sudo apt-get update && sudo apt-get install -y postgresql-client
+          psql -h 127.0.0.1 -U postgres -d seatlock -c "SELECT 1;"
+
       - name: Run tests
+        env:
+          DB_USERNAME: postgres
+          DB_PASSWORD: postgres
         run: mvn -B clean test
 
   deploy:
